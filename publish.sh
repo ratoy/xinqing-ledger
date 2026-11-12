@@ -68,11 +68,12 @@ else
 fi
 
 echo "==> 推送分支 ${BRANCH}"
-# 用带凭据的临时 URL 推送；凭据不写入 .git/config
+# 用 -c 临时覆盖 origin 的 URL，凭据不写入 .git/config，upstream 记录为干净远程名 origin
 PUSH_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${LOGIN}/${REPO_NAME}.git"
 trap 'git remote set-url origin "$REMOTE" 2>/dev/null || true' EXIT
-git push -u "$PUSH_URL" "${BRANCH}:main"
+git -c "remote.origin.url=${PUSH_URL}" push -u origin "${BRANCH}:main"
 git remote set-url origin "$REMOTE"
+trap - EXIT
 
 printf '\n发布完成： https://github.com/%s/%s\n' "$LOGIN" "$REPO_NAME"
 printf '一键部署： curl -fsSL https://raw.githubusercontent.com/%s/%s/main/install.sh | bash\n' "$LOGIN" "$REPO_NAME"
