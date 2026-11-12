@@ -2,7 +2,7 @@
 # 心情の · 一键 Docker 部署脚本
 #
 # 在任意已安装 Docker + Compose v2 的 Linux / macOS 上执行：
-#   curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/ratoy/xinqing-ledger/main/install.sh | bash
 # 已在源码目录内时直接执行：
 #   ./install.sh
 #
@@ -16,7 +16,7 @@
 #   COMPOSE_PROJECT_NAME  Compose 项目名，默认 peiwan-ledger（决定数据卷名，勿随意改）
 set -euo pipefail
 
-DEFAULT_REPO="https://github.com/OWNER/REPO.git"
+DEFAULT_REPO="https://github.com/ratoy/xinqing-ledger.git"
 REPO_URL="${REPO_URL:-$DEFAULT_REPO}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/peiwan-ledger}"
 HOST_PORT="${HOST_PORT:-8080}"

@@ -12,3 +12,6 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# 二进制 logo 已内联为 data URI 写入 public/index.html，仓库只保留纯文本
+public/logo.png

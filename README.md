@@ -11,15 +11,14 @@
 脚本：`install.sh`。在任意已安装 Docker + Compose v2 的 Linux / macOS 上执行一条命令即可完成「拉源码 → 生成配置 → 构建 → 启动 → 健康检查」：
 
 ```bash
-export REPO_URL="https://github.com/OWNER/REPO.git"
-curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/install.sh | REPO_URL="$REPO_URL" bash
+curl -fsSL https://raw.githubusercontent.com/ratoy/xinqing-ledger/main/install.sh | bash
 ```
 
-把 `OWNER` / `REPO` 换成你的 GitHub 用户名和仓库名（`publish.sh` 执行结束会打印可直接复制的完整命令）。也可以先 clone 再执行：
+脚本内已写入默认仓库地址，直接执行即可；`publish.sh` 结束也会打印同一条命令。也可以先 clone 再执行：
 
 ```bash
-git clone https://github.com/OWNER/REPO.git
-cd REPO
+git clone https://github.com/ratoy/xinqing-ledger.git
+cd xinqing-ledger
 ./install.sh
 ```
 
