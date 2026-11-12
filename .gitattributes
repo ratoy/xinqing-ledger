@@ -1,1 +1,4 @@
+# 服务端运行在 Linux 容器内，所有文本文件统一 LF；避免 Windows checkout 产生 CRLF
+* text=auto eol=lf
+*.png binary
 *.sh text eol=lf
