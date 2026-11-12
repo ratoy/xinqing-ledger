@@ -49,7 +49,7 @@ echo "    账号：$LOGIN"
 echo "==> 创建仓库 ${LOGIN}/${REPO_NAME}（${VISIBILITY}）"
 RESP="$(api -X POST https://api.github.com/user/repos \
   -d "{\"name\":\"${REPO_NAME}\",\"private\":$([ "$VISIBILITY" = "public" ] && echo false || echo true),\"description\":\"心情の · 陪玩收入台账（自托管 / 一键 Docker 部署）\"}" \
-  -w '\n%{http_code}' || true)"
+  -w '\n%{http_code}' 2>/dev/null || true)"
 CODE="$(printf '%s' "$RESP" | tail -1)"
 case "$CODE" in
   201) echo "    已创建" ;;
