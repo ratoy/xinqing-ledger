@@ -22,8 +22,9 @@ fi
 ssh_cmd() { ssh "${OPTS[@]}" "$TARGET" "$@"; }
 
 if [ ! -f .env ]; then
-  cp .env.example .env
-  echo "[提示] 已生成 .env（默认无密码）。若非可信内网，请先填写 ACCESS_PASSWORD 再重新运行。"
+  # 不要自动生成无密码 .env：它会被上传到远端并覆盖已有的访问密码
+  echo "[错误] 缺少 .env（含 ACCESS_PASSWORD）。请先执行 cp .env.example .env 并填好密码再运行。" >&2
+  exit 1
 fi
 PORT="$(grep -E '^HOST_PORT=' .env 2>/dev/null | head -1 | cut -d= -f2 | tr -d '\r\n' || true)"
 PORT="${PORT:-8080}"
@@ -45,7 +46,8 @@ ssh_cmd "mkdir -p '${DOCKER_ROOT}/tmp' && chmod 700 '${DOCKER_ROOT}/tmp'"
 
 echo "==> 上传项目文件到 ${REMOTE_DIR}"
 ssh_cmd "mkdir -p '${REMOTE_DIR}/public'"
-for f in Dockerfile docker-compose.yml package.json server.js .env public/index.html public/app.js public/logo.png; do
+# logo 已内联为 data URI，仓库不再包含 public/logo.png，上传列表必须与之保持一致
+for f in Dockerfile docker-compose.yml package.json server.js .env public/index.html public/app.js; do
   ssh "${OPTS[@]}" "$TARGET" "cat > '${REMOTE_DIR}/${f}'" < "$f"
   echo "  $f"
 done
