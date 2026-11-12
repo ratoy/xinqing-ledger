@@ -1,0 +1,18 @@
+services:
+  ledger:
+    build: .
+    image: peiwan-ledger:latest
+    container_name: peiwan-ledger
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-8080}:3000"
+    environment:
+      TZ: Asia/Shanghai
+      ACCESS_USER: "${ACCESS_USER:-admin}"
+      ACCESS_PASSWORD: "${ACCESS_PASSWORD:-}"
+    volumes:
+      # 命名卷会继承镜像内 /app/data 的 node:node 属主，避免宿主机目录权限问题
+      - ledger-data:/app/data
+
+volumes:
+  ledger-data:

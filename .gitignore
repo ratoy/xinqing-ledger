@@ -1,0 +1,14 @@
+# 本地环境变量（含访问密码，禁止提交）
+.env
+.env.local
+
+# 服务端运行数据与备份（含真实账本，禁止提交）
+ledger.json
+ledger.json.bak
+data/
+
+# 依赖、日志与系统文件
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
