@@ -271,49 +271,44 @@
   document.addEventListener('click', function (e) { if (!typePicker.contains(e.target)) toggleTypeMenu(false); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') toggleTypeMenu(false); });
 
-  let autoAmount = null;
+  // 金额只读：始终由「单价 × 时长」自动算出，不允许手填
   function syncAmount() {
     const rRaw = $('rate').value.trim(), hRaw = $('hours').value.trim();
-    if (rRaw === '' || hRaw === '') return;
+    if (rRaw === '' || hRaw === '') { $('amount').value = ''; return; }
     const r = Number(rRaw), h = Number(hRaw);
-    if (!Number.isFinite(r) || !Number.isFinite(h)) return;
-    const v = round2(r * h), cur = $('amount').value.trim();
-    if (cur === '' || (autoAmount !== null && Number(cur) === autoAmount)) {
-      $('amount').value = v;
-      autoAmount = v;
-    }
+    if (!Number.isFinite(r) || !Number.isFinite(h)) { $('amount').value = ''; return; }
+    $('amount').value = String(round2(r * h));
   }
   $('rate').addEventListener('input', syncAmount);
   $('hours').addEventListener('input', syncAmount);
-  $('amount').addEventListener('input', function () { if ($('amount').value.trim() === '') autoAmount = null; });
 
   function addRecord() {
-    const raw = $('amount').value.trim();
     const rRaw = $('rate').value.trim(), hRaw = $('hours').value.trim();
     const rate = rRaw === '' ? null : (Number.isFinite(Number(rRaw)) ? round2(Number(rRaw)) : null);
     const hours = hRaw === '' ? null : (Number.isFinite(Number(hRaw)) ? round2(Number(hRaw)) : null);
-    let amount = raw === '' ? NaN : Number(raw);
-    if (!Number.isFinite(amount) && rate !== null && hours !== null) amount = round2(rate * hours);
-    if (!Number.isFinite(amount)) { $('amount').focus(); return; }
+    if (rate === null || hours === null) {
+      alert('请先填写单价和时长，金额会自动算出。');
+      $('rate').focus(); return;
+    }
+    const amount = round2(rate * hours);
     const rec = {
-      id: uid(), date: $('date').value || today(), amount: round2(amount),
+      id: uid(), date: $('date').value || today(), amount: amount,
       type: pickedType, note: $('note').value.trim(), override: null,
       rate: rate, hours: hours
     };
     $('amount').value = ''; $('rate').value = ''; $('hours').value = ''; $('note').value = '';
-    autoAmount = null;
-    $('amount').focus();
+    $('rate').focus();
     mutate('add', { record: rec }).then(function (ok) {
-      if (!ok && $('amount').value.trim() === '') {
-        $('amount').value = String(rec.amount);
-        $('rate').value = rate === null ? '' : String(rate);
-        $('hours').value = hours === null ? '' : String(hours);
+      if (!ok && $('rate').value.trim() === '' && $('hours').value.trim() === '') {
+        $('rate').value = String(rate);
+        $('hours').value = String(hours);
         $('note').value = rec.note;
+        syncAmount();
       }
     });
   }
   $('addBtn').addEventListener('click', addRecord);
-  ['amount', 'rate', 'hours', 'note'].forEach(function (id) {
+  ['rate', 'hours', 'note'].forEach(function (id) {
     $(id).addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); addRecord(); }
     });

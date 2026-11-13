@@ -35,6 +35,8 @@
     width:100%;padding:9px 11px;font-size:16px;border:1px solid var(--line);border-radius:8px;
     background:#fff;color:var(--text);outline:none;font-family:inherit}
   input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(43,92,217,.12)}
+  input.locked,input.locked:focus{background:#f1f4f9;color:#4a5361;border-color:var(--line);
+    box-shadow:none;cursor:default;font-weight:600}
   button{font-family:inherit;font-size:14px;cursor:pointer;border-radius:8px;padding:9px 16px;
     border:1px solid var(--line);background:#fff;color:var(--text);transition:.15s}
   button:hover{border-color:#b9c4d6;background:#f8faff}
@@ -160,11 +162,11 @@
   </section>
 
   <section class="card">
-    <h2>② 记一笔 <span class="tag">单价、时长、金额都能自己填</span></h2>
+    <h2>② 记一笔 <span class="tag">填单价与时长，金额自动算出（不可手改）</span></h2>
     <div class="row">
-      <div class="field grow"><label>老板付的金额 (元)</label><input type="number" id="amount" step="0.01" placeholder="例如 100" autocomplete="off"></div>
-      <div class="field"><label>单价 (元/小时，选填)</label><input type="number" id="rate" step="0.01" min="0" placeholder="例如 60" autocomplete="off"></div>
-      <div class="field"><label>时长 (小时，选填)</label><input type="number" id="hours" step="0.01" min="0" placeholder="例如 2 或 1.5" autocomplete="off"></div>
+      <div class="field grow"><label>老板付的金额 (元) · 自动算出，已锁定</label><input type="text" id="amount" class="locked" readonly aria-readonly="true" tabindex="-1" placeholder="填单价与时长后自动算出" autocomplete="off"></div>
+      <div class="field"><label>单价 (元/小时)</label><input type="number" id="rate" step="0.01" placeholder="例如 60" autocomplete="off"></div>
+      <div class="field"><label>时长 (小时)</label><input type="number" id="hours" step="0.01" placeholder="例如 2 或 1.5" autocomplete="off"></div>
       <div class="field"><label>订单类型</label>
         <div class="picker" id="typePicker">
           <button type="button" class="picker-btn" id="typeBtn" aria-haspopup="listbox" aria-expanded="false">
@@ -181,7 +183,7 @@
       <div class="field grow"><label>备注（老板 / 项目，可留空）</label><input type="text" id="note" placeholder="选填" autocomplete="off"></div>
       <button type="button" class="primary" id="addBtn" style="height:41px">添加</button>
     </div>
-    <div class="hint">填了单价和时长、金额留空时，会自动填入「单价 × 时长」；金额也可直接手填，手填后不再被自动覆盖。金额框按回车可连续录入；退款、罚扣可用负数金额。</div>
+    <div class="hint">金额 = 单价 × 时长，自动算出，不能手改。固定金额可把「单价」填成该金额、「时长」填 1；退款、罚扣可填负数单价或负数时长。单价、时长或备注框内按回车可连续录入。</div>
   </section>
 
   <section class="card">

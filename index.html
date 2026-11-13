@@ -34,6 +34,8 @@
     width:100%;padding:9px 11px;font-size:16px;border:1px solid var(--line);border-radius:8px;
     background:#fff;color:var(--text);outline:none;font-family:inherit}
   input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(43,92,217,.12)}
+  input.locked,input.locked:focus{background:#f1f4f9;color:#4a5361;border-color:var(--line);
+    box-shadow:none;cursor:default;font-weight:600}
   button{font-family:inherit;font-size:14px;cursor:pointer;border-radius:8px;padding:9px 16px;
     border:1px solid var(--line);background:#fff;color:var(--text);transition:.15s}
   button:hover{border-color:#b9c4d6;background:#f8faff}
@@ -128,11 +130,11 @@
   </section>
 
   <section class="card">
-    <h2>② 记一笔 <span class="tag">单价、时长、金额都能自己填</span></h2>
+    <h2>② 记一笔 <span class="tag">填单价与时长，金额自动算出（不可手改）</span></h2>
     <div class="row">
-      <div class="field grow"><label>老板付的金额 (元)</label><input type="number" id="amount" step="0.01" placeholder="例如 100" autocomplete="off"></div>
-      <div class="field"><label>单价 (元/小时，选填)</label><input type="number" id="rate" step="0.01" min="0" placeholder="例如 60" autocomplete="off"></div>
-      <div class="field"><label>时长 (小时，选填)</label><input type="number" id="hours" step="0.01" min="0" placeholder="例如 2 或 1.5" autocomplete="off"></div>
+      <div class="field grow"><label>老板付的金额 (元) · 自动算出，已锁定</label><input type="text" id="amount" class="locked" readonly aria-readonly="true" tabindex="-1" placeholder="填单价与时长后自动算出" autocomplete="off"></div>
+      <div class="field"><label>单价 (元/小时)</label><input type="number" id="rate" step="0.01" placeholder="例如 60" autocomplete="off"></div>
+      <div class="field"><label>时长 (小时)</label><input type="number" id="hours" step="0.01" placeholder="例如 2 或 1.5" autocomplete="off"></div>
       <div class="field"><label>订单类型</label>
         <div class="picker" id="typePicker">
           <button type="button" class="picker-btn" id="typeBtn" aria-haspopup="listbox" aria-expanded="false">
@@ -149,7 +151,7 @@
       <div class="field grow"><label>备注（老板 / 项目，可留空）</label><input type="text" id="note" placeholder="选填" autocomplete="off"></div>
       <button type="button" class="primary" id="addBtn" style="height:41px">添加</button>
     </div>
-    <div class="hint">填了单价和时长、金额留空时，会自动填入「单价 × 时长」；金额也可直接手填，手填后不再被自动覆盖。金额框按回车可连续录入；退款、罚扣可用负数金额。</div>
+    <div class="hint">金额 = 单价 × 时长，自动算出，不能手改。固定金额可把「单价」填成该金额、「时长」填 1；退款、罚扣可填负数单价或负数时长。单价、时长或备注框内按回车可连续录入。</div>
   </section>
 
   <section class="card">
@@ -400,43 +402,34 @@
   document.addEventListener('click', function (e) { if (!typePicker.contains(e.target)) toggleTypeMenu(false); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') toggleTypeMenu(false); });
 
-  // 添加
-  var autoAmount = null;
+  // 添加：金额只读，始终由「单价 × 时长」自动算出
   function syncAmount(){
     var rRaw = $('rate').value.trim(), hRaw = $('hours').value.trim();
-    if(rRaw === '' || hRaw === '') return;
+    if(rRaw === '' || hRaw === ''){ $('amount').value = ''; return; }
     var r = Number(rRaw), h = Number(hRaw);
-    if(!Number.isFinite(r) || !Number.isFinite(h)) return;
-    var v = round2(r * h), cur = $('amount').value.trim();
-    if(cur === '' || (autoAmount !== null && Number(cur) === autoAmount)){
-      $('amount').value = v;
-      autoAmount = v;
-    }
+    if(!Number.isFinite(r) || !Number.isFinite(h)){ $('amount').value = ''; return; }
+    $('amount').value = String(round2(r * h));
   }
   $('rate').addEventListener('input', syncAmount);
   $('hours').addEventListener('input', syncAmount);
-  $('amount').addEventListener('input', function(){ if($('amount').value.trim() === '') autoAmount = null; });
 
   function addRecord(){
-    var raw = $('amount').value.trim();
     var rRaw = $('rate').value.trim(), hRaw = $('hours').value.trim();
     var rate = rRaw === '' ? null : (Number.isFinite(Number(rRaw)) ? round2(Number(rRaw)) : null);
     var hours = hRaw === '' ? null : (Number.isFinite(Number(hRaw)) ? round2(Number(hRaw)) : null);
-    var amount = raw === '' ? NaN : Number(raw);
-    if(!Number.isFinite(amount) && rate !== null && hours !== null) amount = round2(rate * hours);
-    if(!Number.isFinite(amount)){ $('amount').focus(); return; }
+    if(rate === null || hours === null){ alert('请先填写单价和时长，金额会自动算出。'); $('rate').focus(); return; }
+    var amount = round2(rate * hours);
     state.current.push({
-      id:uid(), date:$('date').value || today(), amount:round2(amount),
+      id:uid(), date:$('date').value || today(), amount:amount,
       type:pickedType, note:$('note').value.trim(), override:null,
       rate:rate, hours:hours
     });
     save(); render();
     $('amount').value = ''; $('rate').value = ''; $('hours').value = ''; $('note').value = '';
-    autoAmount = null;
-    $('amount').focus();
+    $('rate').focus();
   }
   $('addBtn').addEventListener('click', addRecord);
-  ['amount','rate','hours','note'].forEach(function(id){
+  ['rate','hours','note'].forEach(function(id){
     $(id).addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); addRecord(); } });
   });
 
