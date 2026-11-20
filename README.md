@@ -16,7 +16,7 @@
 
 ## 一键部署到 Docker
 
-脚本：`install.sh`。在任意已安装 Docker + Compose v2 的 Linux / macOS 上执行一条命令即可完成「拉源码 → 生成配置 → 构建 → 启动 → 健康检查」：
+脚本：`install.sh`。在任意已安装 Docker + Compose v2 的 Linux / macOS 上执行一条命令即可完成「拉源码 → 生成配置 → 拉取 ghcr 镜像 → 启动 → 健康检查」：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ratoy/xinqing-ledger/main/install.sh | bash
@@ -37,7 +37,19 @@ export HOST_PORT=18080 ACCESS_PASSWORD='换成你的强密码'
 ./install.sh
 ```
 
-脚本会自动：检查 Docker / Compose、检测端口占用、生成权限 600 的 `.env`（未指定密码时生成 16 位随机强密码）、补齐部分系统缺失的 `DockerRootDir/tmp`、`docker compose up -d --build`、轮询 `/api/health` 直到通过，最后打印访问地址、账号、密码和常用运维命令。重复执行即为更新，数据卷保留。
+脚本会自动：检查 Docker / Compose、检测端口占用、生成权限 600 的 `.env`（未指定密码时生成 16 位随机强密码）、补齐部分系统缺失的 `DockerRootDir/tmp`、`docker compose pull` + `docker compose up -d`、清理无 tag 的旧镜像、轮询 `/api/health` 直到通过，最后打印访问地址、账号、密码和常用运维命令。重复执行即为更新，数据卷保留。
+
+### 镜像从哪来（不在本机构建）
+
+镜像由 GitHub Actions 构建并推送到 `ghcr.io/ratoy/xinqing-ledger`（`linux/amd64` + `linux/arm64` 双架构），工作流见 `.github/workflows/build-and-push.yml`：往 `main` 分支推代码即自动构建，打 `latest` 与 `sha-xxxxxxx` 两个 tag。
+
+因此目标机（包括 iStoreOS / OpenWrt 这类没有 buildx 的路由器）**只 `pull` 不 `build`**，不会再产生一堆 `<none>` 中间层镜像。注意：`docker-compose.yml` 里已移除了 `build: .`，若你要在本机临时改代码构建，请显式执行：
+
+```bash
+docker build -t ghcr.io/ratoy/xinqing-ledger:latest .
+```
+
+`latest` 是公开包，匿名即可拉取；如果把包改成私有，则需先在目标机 `docker login ghcr.io` 再 pull。
 
 ### 环境变量
 
@@ -84,5 +96,5 @@ Token 需要 `repo` 权限。脚本推送前会校验 `.env` / `ledger.json` 已
 | `Dockerfile` / `docker-compose.yml` | 镜像构建与容器编排，命名卷持久化 |
 | `server.js` | HTTP 服务与数据接口，原子写入 `ledger.json` |
 | `public/` | 服务器版前端（index.html + app.js + logo） |
-| `deploy.sh` | SSH 到指定远程主机部署 / 更新（与 `install.sh` 的区别：`deploy.sh` 面向已固定的目标机，`install.sh` 面向任意装了 Docker 的机器） |
+| `deploy.sh` | SSH 到指定远程主机部署 / 更新（pull 模式：只拉 ghcr 镜像、不本地构建） |
 | `.env.example` | 配置模板 |
