@@ -1,15 +1,21 @@
 #!/usr/bin/env bash
-# 一键部署 / 更新到远程 Linux 主机
+# 一键部署 / 更新到远程 Linux 主机（只拉镜像，不在目标机本地构建）
+#
+# 镜像由 GitHub Actions 构建并推送到 ghcr.io/<owner>/xinqing-ledger，
+# 目标机只执行 docker compose pull + up，因此不会再堆积 <none> 中间层镜像。
+#
 # 用法：
 #   ./deploy.sh [主机IP] [SSH用户名]
 #   SSH_KEY=/path/to/key.pem SSH_USER=root ./deploy.sh 192.168.2.50
-# 前提：本机到目标机可 SSH（建议配置免密）；目标机已装 Docker + Compose v2。
+#   REMOTE_DIR=/mnt/docker/compose/peiwan-ledger ./deploy.sh
+# 前提：本机到目标机可 SSH（建议配置免密）；目标机已装 Docker + Compose v2，且能访问 ghcr.io。
 # 说明：文件上传走 SSH stdin，不依赖 scp/sftp，兼容 dropbear（OpenWrt / iStoreOS）。
 set -euo pipefail
 
 HOST="${1:-192.168.2.50}"
 SSH_USER="${SSH_USER:-root}"
 REMOTE_DIR="${REMOTE_DIR:-/opt/peiwan-ledger}"
+IMAGE="${IMAGE:-ghcr.io/ratoy/xinqing-ledger:latest}"
 TARGET="${SSH_USER}@${HOST}"
 cd "$(dirname "$0")"
 
@@ -40,20 +46,18 @@ if [ -n "${OWNER}" ] && [[ "${OWNER}" != peiwan-ledger* ]]; then
   echo "请修改 .env 中的 HOST_PORT 后重试"; exit 1
 fi
 
-echo "==> 确保 Docker 构建临时目录存在"
-DOCKER_ROOT="$(ssh_cmd "docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo /var/lib/docker" | tail -1 | tr -d '\r')"
-ssh_cmd "mkdir -p '${DOCKER_ROOT}/tmp' && chmod 700 '${DOCKER_ROOT}/tmp'"
-
-echo "==> 上传项目文件到 ${REMOTE_DIR}"
-ssh_cmd "mkdir -p '${REMOTE_DIR}/public'"
-# logo 已内联为 data URI，仓库不再包含 public/logo.png，上传列表必须与之保持一致
-for f in Dockerfile docker-compose.yml package.json server.js .env public/index.html public/app.js; do
+echo "==> 上传部署文件到 ${REMOTE_DIR}"
+ssh_cmd "mkdir -p '${REMOTE_DIR}'"
+for f in docker-compose.yml .env; do
   ssh "${OPTS[@]}" "$TARGET" "cat > '${REMOTE_DIR}/${f}'" < "$f"
   echo "  $f"
 done
 
-echo "==> 构建并启动"
-ssh_cmd "cd '${REMOTE_DIR}' && docker compose up -d --build && docker compose ps"
+echo "==> 拉取镜像并启动：${IMAGE}"
+ssh_cmd "cd '${REMOTE_DIR}' && docker compose pull && docker compose up -d && docker compose ps"
+
+echo "==> 清理无 tag 的旧镜像（不动在用镜像）"
+ssh_cmd "docker image prune -f | tail -2 || true"
 
 echo "==> 健康检查"
 ssh_cmd "echo -n 'health: '; wget -qO- http://127.0.0.1:${PORT}/api/health; echo"

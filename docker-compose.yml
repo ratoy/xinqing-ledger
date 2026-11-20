@@ -1,7 +1,8 @@
 services:
   ledger:
-    build: .
-    image: peiwan-ledger:latest
+    # 镜像由 GitHub Actions 构建后推送到 ghcr.io（见 .github/workflows/build-and-push.yml）
+    # 本地不再构建，避免 legacy builder 每次部署堆积一堆 <none> 中间层镜像
+    image: ghcr.io/ratoy/xinqing-ledger:latest
     container_name: peiwan-ledger
     restart: unless-stopped
     ports:

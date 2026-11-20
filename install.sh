@@ -93,14 +93,18 @@ else
   PASSWORD="$(env_get ACCESS_PASSWORD '')"
 fi
 
-# 部分系统（如 OpenWrt / iStoreOS）的 Docker RootDir/tmp 缺失会导致构建失败，尽量补上
+# 部分系统（如 OpenWrt / iStoreOS）的 Docker RootDir/tmp 缺失会导致旧版本地构建失败，尽量补上
 DOCKER_ROOT="$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || true)"
 if [ -n "$DOCKER_ROOT" ] && [ ! -d "$DOCKER_ROOT/tmp" ]; then
   mkdir -p "$DOCKER_ROOT/tmp" 2>/dev/null && chmod 700 "$DOCKER_ROOT/tmp" 2>/dev/null || true
 fi
 
-log "构建并启动容器（项目名 ${COMPOSE_PROJECT_NAME}）"
-docker compose up -d --build
+log "拉取镜像并启动容器（项目名 ${COMPOSE_PROJECT_NAME}）"
+# 镜像由 GitHub Actions 构建并推送到 ghcr.io，本机只拉取，不在本地构建
+docker compose pull
+docker compose up -d
+# 清理拉取新版本后残留的无 tag 旧镜像（不动在用镜像）
+docker image prune -f >/dev/null 2>&1 || true
 
 log "等待健康检查 http://127.0.0.1:${HOST_PORT}/api/health"
 OK=0
@@ -122,7 +126,7 @@ printf '  登录密码：%s\n' "${PASSWORD:-（.env 中未设置，未启用密�
 printf '  源码目录：%s\n' "$SRC"
 printf '  数据卷：%s_ledger-data（停止容器不会删除）\n' "$COMPOSE_PROJECT_NAME"
 printf '\n常用命令（在 %s 下执行）：\n' "$SRC"
-printf '  更新：./install.sh     或     git pull && docker compose up -d --build\n'
+printf '  更新：./install.sh     或     docker compose pull && docker compose up -d\n'
 printf '  日志：docker compose logs -f\n'
 printf '  停止：docker compose down        （保留数据）\n'
 printf '  卸载：docker compose down -v     （会删除账本数据，慎用）\n'
